@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Math Quiz</title>
+    <style>
+      /* Internal CSS */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(to bottom right, #DA3068, #14469F);
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.menu-icon {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    z-index: 1000;
+}
+
+.menu-options {
+    position: absolute;
+    top: 70px;
+    left: 10px;
+    background-color: black;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    display: none;
+    z-index: 999;
+}
+
+.menu-options button {
+    display: block;
+    width: 100%;
+    background-color: #333;
+    color: white;
+    font-size: 16px;
+    padding: 10px;
+    margin: 5px 0;
+    border: none;
+    border-radius: 5px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-options button:hover {
+    background-color: #444;
+}
+
+.question {
+    font-size: 36px; /* Increased font size */
+    margin: 20px 0;
+    color: white;
+    font-weight: bold; /* Make the text bold for emphasis */
+}
+
+.timer, .score {
+    font-size: 30px;
+    margin: 10px 0;
+    color: white;
+}
+
+.options-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.option-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 24px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 18px;
+    width: 60%;
+    max-width: 250px;
+}
+
+.option-btn:hover {
+    background-color: #45a049;
+}
+
+.gameOverPopup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 999;
+    padding: 20px;
+    display: none;
+}
+
+.gameOverPopup button {
+    background-color: #f44336;
+    color: white;
+    font-size: 20px;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 20px;
+}
+
+.gameOverPopup button:hover {
+    background-color: #d32f2f;
+}
+
+#hearts img {
+    width: 40px;  /* Make hearts bigger */
+    height: 40px;
+    margin: 5px;
+}
+
+    </style>
+</head>
+<body>
+    <img src="menu.png" class="menu-icon" alt="Menu Icon" onclick="toggleMenu()">
+
+    <div class="menu-options">
+        <button onclick="resumeGame()">Resume</button>
+        <button onclick="restartGame()">Restart</button>
+        <button onclick="goToHome()">Go to Home</button>
+    </div>
+
+    <div id="question" class="question"></div>
+    <div id="timer" class="timer"></div>
+    <div id="score" class="score"></div>
+    <div id="hearts" class="hearts"></div>
+    <div id="optionsContainer" class="options-container"></div>
+
+    <div id="gameOverPopup" class="gameOverPopup">
+        <h2>Game Over</h2>
+        <p>Your Score: <span id="finalScore"></span></p>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+
+    <script>
+        // 50 Predefined Questions with Options
+const questions = [
+    { question: "What is 12 + 8?", options: { A: "18", B: "20", C: "22", D: "24" }, answer: "B" },
+    { question: "What is 5 x 3?", options: { A: "15", B: "10", C: "20", D: "12" }, answer: "A" },
+    { question: "What is 25 - 7?", options: { A: "17", B: "18", C: "19", D: "20" }, answer: "C" },
+    { question: "What is 9 ÷ 3?", options: { A: "2", B: "3", C: "4", D: "5" }, answer: "B" },
+    { question: "What is 8 x 7?", options: { A: "56", B: "49", C: "54", D: "64" }, answer: "A" },
+    { question: "What is 100 - 35?", options: { A: "55", B: "65", C: "75", D: "85" }, answer: "B" },
+    { question: "What is 14 ÷ 2?", options: { A: "6", B: "7", C: "8", D: "9" }, answer: "B" },
+    { question: "What is 15 + 26?", options: { A: "40", B: "41", C: "42", D: "43" }, answer: "B" },
+    { question: "What is 9 x 9?", options: { A: "81", B: "72", C: "99", D: "90" }, answer: "A" },
+    { question: "What is 30 ÷ 5?", options: { A: "5", B: "6", C: "7", D: "8" }, answer: "B" },
+    { question: "What is 40 + 13?", options: { A: "53", B: "50", C: "63", D: "60" }, answer: "A" },
+    { question: "What is 20 x 3?", options: { A: "30", B: "60", C: "90", D: "40" }, answer: "B" },
+    { question: "What is 100 - 70?", options: { A: "25", B: "30", C: "40", D: "50" }, answer: "C" },
+    { question: "What is 7 x 6?", options: { A: "42", B: "36", C: "48", D: "49" }, answer: "A" },
+    { question: "What is 8 + 19?", options: { A: "27", B: "26", C: "28", D: "29" }, answer: "A" },
+    { question: "What is 50 ÷ 10?", options: { A: "5", B: "4", C: "6", D: "3" }, answer: "A" },
+    { question: "What is 9 x 8?", options: { A: "81", B: "72", C: "64", D: "90" }, answer: "B" },
+    { question: "What is 12 x 4?", options: { A: "36", B: "40", C: "48", D: "52" }, answer: "C" },
+    { question: "What is 60 - 15?", options: { A: "30", B: "40", C: "45", D: "50" }, answer: "C" },
+    { question: "What is 7 + 33?", options: { A: "39", B: "40", C: "41", D: "42" }, answer: "C" },
+    { question: "What is 18 ÷ 6?", options: { A: "2", B: "3", C: "4", D: "5" }, answer: "B" },
+    { question: "What is 14 x 5?", options: { A: "70", B: "60", C: "65", D: "75" }, answer: "A" },
+    { question: "What is 22 + 18?", options: { A: "38", B: "40", C: "42", D: "45" }, answer: "C" },
+    { question: "What is 80 ÷ 8?", options: { A: "10", B: "11", C: "9", D: "8" }, answer: "A" },
+    { question: "What is 3 x 12?", options: { A: "30", B: "36", C: "39", D: "33" }, answer: "B" },
+    { question: "What is 45 - 17?", options: { A: "28", B: "30", C: "32", D: "35" }, answer: "A" },
+    { question: "What is 6 x 7?", options: { A: "40", B: "42", C: "49", D: "44" }, answer: "B" },
+    { question: "What is 28 + 15?", options: { A: "41", B: "42", C: "43", D: "44" }, answer: "C" },
+    { question: "What is 90 ÷ 3?", options: { A: "20", B: "30", C: "40", D: "25" }, answer: "B" },
+    { question: "What is 14 x 3?", options: { A: "42", B: "45", C: "48", D: "50" }, answer: "A" },
+    { question: "What is 36 - 19?", options: { A: "17", B: "18", C: "19", D: "20" }, answer: "A" },
+    { question: "What is 22 ÷ 2?", options: { A: "11", B: "10", C: "12", D: "13" }, answer: "A" },
+    { question: "What is 33 x 2?", options: { A: "66", B: "60", C: "68", D: "72" }, answer: "A" },
+    { question: "What is 50 ÷ 5?", options: { A: "9", B: "10", C: "12", D: "11" }, answer: "B" },
+    { question: "What is 48 - 8?", options: { A: "40", B: "42", C: "44", D: "46" }, answer: "A" },
+    { question: "What is 6 x 8?", options: { A: "48", B: "54", C: "50", D: "60" }, answer: "A" },
+    { question: "What is 60 + 14?", options: { A: "72", B: "74", C: "76", D: "78" }, answer: "B" },
+    { question: "What is 11 ÷ 1?", options: { A: "11", B: "12", C: "10", D: "9" }, answer: "A" },
+    { question: "What is 21 x 1?", options: { A: "20", B: "21", C: "22", D: "23" }, answer: "B" },
+    { question: "What is 7 + 17?", options: { A: "25", B: "24", C: "23", D: "26" }, answer: "B" },
+    { question: "What is 40 ÷ 4?", options: { A: "9", B: "8", C: "10", D: "12" }, answer: "C" },
+    { question: "What is 10 x 10?", options: { A: "100", B: "110", C: "90", D: "95" }, answer: "A" },
+    { question: "What is 20 - 12?", options: { A: "9", B: "8", C: "7", D: "6" }, answer: "B" },
+];
+
+// Shuffle questions
+function shuffleQuestions() {
+    return questions.sort(() => Math.random() - 0.5);
+}
+
+// Core Game Logic
+// ... Add previous game logic functions ...
+            // Game variables
+let score = 0;
+let timer = 180; // 3 minutes
+let currentQuestionIndex = 0;
+let hearts = 5;
+let timerInterval;
+let isPaused = false;
+
+// Format time for display
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds < 10 ? '0' + remainingSeconds : remainingSeconds}`;
+}
+
+// Update timer
+function updateTimer() {
+    document.getElementById("timer").innerText = `Time: ${formatTime(timer)}`;
+}
+
+// Display current question
+function displayQuestion() {
+    const question = questions[currentQuestionIndex];
+    document.getElementById("question").innerText = question.question;
+
+    // Display options
+    const optionsContainer = document.getElementById("optionsContainer");
+    optionsContainer.innerHTML = '';
+    for (const [label, text] of Object.entries(question.options)) {
+        const button = document.createElement("button");
+        button.classList.add("option-btn");
+        button.innerText = `${label}: ${text}`;
+        button.onclick = () => checkAnswer(label); // Pass selected option label (A, B, C, D)
+        optionsContainer.appendChild(button);
+    }
+}
+
+// Check the answer
+function checkAnswer(selectedOption) {
+    const correctAnswer = questions[currentQuestionIndex].answer;
+    if (selectedOption === correctAnswer) {
+        score++;
+    } else {
+        hearts--;
+        updateHearts();
+        if (hearts === 0) {
+            endGame();
+        }
+    }
+    updateScore();
+    currentQuestionIndex++;
+    if (currentQuestionIndex < questions.length) {
+        displayQuestion();
+    } else {
+        endGame();
+    }
+}
+
+// Update hearts display
+function updateHearts() {
+    const heartsContainer = document.getElementById("hearts");
+    heartsContainer.innerHTML = '';
+    for (let i = 0; i < hearts; i++) {
+        const img = document.createElement('img');
+        img.src = "heart.png";  // Heart image path
+        img.alt = "Heart";
+        heartsContainer.appendChild(img);
+    }
+}
+
+// Update score display
+function updateScore() {
+    document.getElementById("score").innerText = `Score: ${score}`;
+}
+
+// End game
+function endGame() {
+    clearInterval(timerInterval);
+    document.getElementById("gameOverPopup").style.display = "flex";
+}
+
+// Restart the game
+function restartGame() {
+    clearInterval(timerInterval); // Clear any existing timer
+    score = 0;
+    hearts = 5;
+    timer = 180;
+    currentQuestionIndex = 0;
+    updateHearts();
+    updateScore();
+    updateTimer();
+    document.getElementById("gameOverPopup").style.display = "none";
+    startGame();
+}
+
+// Start the game
+function startGame() {
+    updateTimer(); // Update display immediately
+    startTimer(); // Start the timer
+    displayQuestion();
+    updateHearts();
+}
+
+// Start the timer
+function startTimer() {
+    timerInterval = setInterval(() => {
+        if (timer > 0) {
+            timer--;
+            updateTimer();
+        } else {
+            clearInterval(timerInterval); // Stop timer when it hits 0
+            endGame(); // Trigger end of game
+        }
+    }, 1000); // Decrease timer by 1 every second
+}
+
+// Menu toggle
+function toggleMenu() {
+    const menuOptions = document.querySelector(".menu-options");
+    menuOptions.style.display = (menuOptions.style.display === "block") ? "none" : "block";
+
+    // Pause the game when menu is opened
+    if (menuOptions.style.display === "block") {
+        isPaused = true;
+        clearInterval(timerInterval);
+    }
+}
+
+// Resume the game from menu
+function resumeGame() {
+    const menuOptions = document.querySelector(".menu-options");
+    menuOptions.style.display = "none";
+
+    // Resume the game
+    if (isPaused) {
+        isPaused = false;
+        startTimer(); // Restart timer if paused
+    }
+}
+
+// Go to Home from menu
+function goToHome() {
+    window.location.href = "home.html"; // Update with the actual home page URL
+}
+
+// Start the game on page load
+window.onload = startGame;
+    </script>
+</body>
+</html>
