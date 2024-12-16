@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Math Quiz</title>
+    <style>
+        /* Internal CSS */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom right, #DA3068, #14469F);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .menu-icon {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+
+        .menu-options {
+            position: absolute;
+            top: 70px;
+            left: 10px;
+            background-color: black;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-options button {
+            display: block;
+            width: 100%;
+            background-color: #333;
+            color: white;
+            font-size: 16px;
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 5px;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .menu-options button:hover {
+            background-color: #444;
+        }
+
+        .question {
+            font-size: 36px;
+            margin: 20px 0;
+            color: white;
+            font-weight: bold;
+        }
+
+        .timer, .score {
+            font-size: 30px;
+            margin: 10px 0;
+            color: white;
+        }
+
+        .options-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .option-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 18px;
+            width: 60%;
+            max-width: 250px;
+        }
+
+        .option-btn:hover {
+            background-color: #45a049;
+        }
+
+        .gameOverPopup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 999;
+            padding: 20px;
+            display: none;
+        }
+
+        .gameOverPopup button {
+            background-color: #f44336;
+            color: white;
+            font-size: 20px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .gameOverPopup button:hover {
+            background-color: #d32f2f;
+        }
+
+        #hearts img {
+            width: 40px;
+            height: 40px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <img src="menu.png" class="menu-icon" alt="Menu Icon" onclick="toggleMenu()">
+
+    <div class="menu-options">
+        <button onclick="resumeGame()">Resume</button>
+        <button onclick="restartGame()">Restart</button>
+        <button onclick="goToHome()">Go to Home</button>
+    </div>
+
+    <div id="question" class="question"></div>
+    <div id="timer" class="timer"></div>
+    <div id="score" class="score"></div>
+    <div id="hearts" class="hearts"></div>
+    <div id="optionsContainer" class="options-container"></div>
+
+    <div id="gameOverPopup" class="gameOverPopup">
+        <h2>Game Over</h2>
+        <p>Your Score: <span id="finalScore"></span></p>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+
+    <script>
+        const questions = [
+            { question: "What is 12 + 8?", options: { A: "18", B: "20", C: "22", D: "24" }, answer: "B" },
+            { question: "What is 5 x 3?", options: { A: "15", B: "10", C: "20", D: "12" }, answer: "A" },
+        ];
+
+        let score = 0;
+        let timer = 180;
+        let currentQuestionIndex = 0;
+        let hearts = 5;
+        let timerInterval;
+        let isPaused = false;
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds < 10 ? '0' + remainingSeconds : remainingSeconds}`;
+        }
+
+        function updateTimer() {
+            document.getElementById("timer").innerText = `Time: ${formatTime(timer)}`;
+        }
+
+        function displayQuestion() {
+            const question = questions[currentQuestionIndex];
+            document.getElementById("question").innerText = question.question;
+            const optionsContainer = document.getElementById("optionsContainer");
+            optionsContainer.innerHTML = '';
+            for (const [label, text] of Object.entries(question.options)) {
+                const button = document.createElement("button");
+                button.classList.add("option-btn");
+                button.innerText = `${label}: ${text}`;
+                button.onclick = () => checkAnswer(label);
+                optionsContainer.appendChild(button);
+            }
+        }
+
+        function checkAnswer(selectedOption) {
+            const correctAnswer = questions[currentQuestionIndex].answer;
+            if (selectedOption === correctAnswer) {
+                score++;
+            } else {
+                hearts--;
+                updateHearts();
+                if (hearts === 0) endGame();
+            }
+            updateScore();
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) displayQuestion();
+            else endGame();
+        }
+
+        function updateHearts() {
+            const heartsContainer = document.getElementById("hearts");
+            heartsContainer.innerHTML = '';
+            for (let i = 0; i < hearts; i++) {
+                const img = document.createElement('img');
+                img.src = "heart.png";
+                img.alt = "Heart";
+                heartsContainer.appendChild(img);
+            }
+        }
+
+        function updateScore() {
+            document.getElementById("score").innerText = `Score: ${score}`;
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            document.getElementById("finalScore").innerText = score;
+            document.getElementById("gameOverPopup").style.display = "flex";
+        }
+
+        function restartGame() {
+            clearInterval(timerInterval);
+            score = 0;
+            hearts = 5;
+            timer = 180;
+            currentQuestionIndex = 0;
+            updateHearts();
+            updateScore();
+            updateTimer();
+            document.getElementById("gameOverPopup").style.display = "none";
+            startGame();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (timer > 0) {
+                    timer--;
+                    updateTimer();
+                } else {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function toggleMenu() {
+            const menuOptions = document.querySelector(".menu-options");
+            menuOptions.style.display = menuOptions.style.display === "block" ? "none" : "block";
+            if (menuOptions.style.display === "block") {
+                isPaused = true;
+                clearInterval(timerInterval);
+            }
+        }
+
+        function resumeGame() {
+            document.querySelector(".menu-options").style.display = "none";
+            if (isPaused) {
+                isPaused = false;
+                startTimer();
+            }
+        }
+
+        function startGame() {
+            updateHearts();
+            updateScore();
+            updateTimer();
+            displayQuestion();
+            startTimer();
+        }
+
+        function goToHome() {
+            window.location.href = "index.html";
+        }
+
+        window.onload = startGame;
+    </script>
+</body>
+</html>
